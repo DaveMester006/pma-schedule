@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMA Schedule</title>
+    <style>
+        /* General styles and variables */
+        :root {
+            --color-background: #f4f7f6;
+            --color-container: #ffffff;
+            --color-primary: #005f73;
+            --color-text: #333;
+            --color-shadow: #e0e0e0;
+
+            /* Status colors */
+            --color-planned: #a1bbd0;      /* Gray */
+            --color-in-progress: #e9c46a;    /* Yellow */
+            --color-completed: #228B22;           /* Darker Green (Forest Green) */
+            --color-deleted: #e76f51;
+
+            /* Subproject colors (in modal) */
+            --color-subproject-background: #e6e6e6;
+            --color-subproject-text: #555;
+            --color-subproject-planned: #5A6268;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--color-background);
+            color: var(--color-text);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--color-container);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            box-sizing: border-box;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-shadow);
+            position: relative;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        header h1 {
+            color: var(--color-primary);
+            font-size: 2.2rem;
+            flex-shrink: 0;
+            margin-right: auto;
+        }
+
+        .logo-container {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .ibiden-logo {
+            max-height: 60px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .user-section label {
+            margin-right: 0;
+            font-weight: bold;
+        }
+
+        .user-section select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        /* Section styling */
+        .form-section,
+        .projects-section {
+            background-color: var(--color-container);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: var(--color-primary);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        form {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: var(--color-text);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="date"] {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        button {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0, 95, 115, 0.2);
+        }
+
+        button:hover {
+            background-color: #004d60;
+            transform: translateY(-2px);
+        }
+
+        /* Project List styles */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters input[type="text"],
+        .filters select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        #project-list {
+            display: grid;
+            gap: 20px;
+        }
+
+        .project-item {
+            background-color: #f0f0f0;
+            border-left: 8px solid var(--color-planned); /* Default border */
+            border-radius: 8px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+
+        .project-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .project-item.status-planned { border-left-color: var(--color-planned); }
+        .project-item.status-inProgress { border-left-color: var(--color-in-progress); }
+        .project-item.status-completed { border-left-color: var(--color-completed); }
+
+        .project-item .project-info {
+            flex-grow: 1;
+        }
+
+        .project-item .project-info p {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .project-item .project-info strong {
+            font-size: 1.1em;
+            color: var(--color-primary);
+        }
+
+        .status-text {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        .status-text.status-planned { background-color: var(--color-planned); }
+        .status-text.status-inProgress { background-color: var(--color-in-progress); }
+        .status-text.status-completed { background-color: var(--color-completed); }
+
+        .project-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .project-controls select {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .project-controls .delete-button {
+            background-color: var(--color-deleted);
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            box-shadow: none;
+        }
+
+        .project-controls .delete-button:hover {
+            background-color: #c94c34;
+            transform: none;
+        }
+
+        /* Date editing buttons */
+        .edit-dates-button,
+        .save-dates-button,
+        .cancel-dates-button {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .edit-dates-button { background-color: #007bff; color: white; }
+        .edit-dates-button:hover { background-color: #0056b3; transform: translateY(-1px); }
+        .save-dates-button { background-color: #28a745; color: white; }
+        .save-dates-button:hover { background-color: #218838; transform: translateY(-1px); }
+        .cancel-dates-button { background-color: #dc3545; color: white; }
+        .cancel-dates-button:hover { background-color: #c82333; transform: translateY(-1px); }
+
+        .project-item .project-info input[type="date"] {
+            padding: 6px 8px;
+            font-size: 0.9rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex-shrink: 0;
+            width: auto;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--color-container);
+            margin: auto;
+            padding: 30px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            position: relative;
+            width: 90%;
+            max-width: 850px;
+            animation: fadeIn 0.3s ease-out;
+            box-sizing: border-box;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .close-button {
+            color: #888;
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #555;
+            text-decoration: none;
+        }
+
+        #modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .project-info-content,
+        .subproject-add,
+        .subprojects-list {
+            padding: 25px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            background-color: #fcfcfc;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        .project-info-content h3,
+        .subproject-add h4,
+        .subprojects-list h4 {
+            color: var(--color-primary);
+            margin-bottom: 18px;
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--color-shadow);
+            padding-bottom: 10px;
+        }
+
+        .project-info-content p {
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .project-info-content p strong {
+            font-weight: normal;
+            color: var(--color-text);
+        }
+
+        .subproject-item {
+            background-color: #fcfcfc;
+            border-left: 6px solid var(--color-subproject-planned);
+            border-radius: 8px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .subproject-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .subproject-item.status-planned { border-left-color: var(--color-planned); }
+        .subproject-item.status-inProgress { border-left-color: var(--color-in-progress); }
+        .subproject-item.status-completed { border-left-color: var(--color-completed); }
+
+        .subproject-info strong {
+            font-size: 1.15rem;
+            color: var(--color-primary);
+        }
+
+        .subproject-info p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        .subproject-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .subproject-controls select {
+            font-size: 0.9rem;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .subproject-controls button {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+        }
+
+        .edit-subproject-date-button,
+        .save-subproject-date-button,
+        .cancel-subproject-date-button {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border-radius: 5px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .subproject-info input[type="date"] {
+            padding: 5px 8px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+        }
+
+        .no-projects-message, .no-subprojects-message {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Responsive design */
+        @media (min-width: 768px) {
+            form {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+            .list-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .filters {
+                flex-wrap: nowrap;
+            }
+            .project-item {
+                flex-wrap: nowrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PMA Schedule</h1>
+            <div class="logo-container">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Ibiden_company_logo.svg/311px-Ibiden_company_logo.svg.png" alt="Ibiden Logo" class="ibiden-logo">
+            </div>
+            <div class="user-section">
+                <label for="user-selector">Current User:</label>
+                <select id="user-selector">
+                    <option value="Gabor">Gabor</option>
+                    <option value="Attila">Attila</option>
+                    <option value="David">David</option>
+                </select>
+            </div>
+        </header>
+
+        <section class="form-section">
+            <h2>Create New Project</h2>
+            <form id="project-form">
+                <div class="form-group">
+                    <label for="projectName">Project Name:</label>
+                    <input type="text" id="projectName" required>
+                </div>
+                <div class="form-group">
+                    <label for="startDate">Start Date:</label>
+                    <input type="date" id="startDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="dueDate">Due Date:</label>
+                    <input type="date" id="dueDate" required>
+                </div>
+                <button type="submit">Add Project</button>
+            </form>
+        </section>
+
+        <section class="projects-section">
+            <div class="list-header">
+                <h2>Current Projects</h2>
+                <div class="filters">
+                    <label for="name-filter">Search by Name:</label>
+                    <input type="text" id="name-filter" placeholder="Project name...">
+
+                    <label for="status-filter">All Statuses:</label>
+                    <select id="status-filter">
+                        <option value="all">All</option>
+                        <option value="planned">Planned</option>
+                        <option value="inProgress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="project-list">
+                <!-- Project items will be rendered here by JavaScript -->
+                <div class="no-projects-message" id="no-projects-message">No projects to display.</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Project Details Modal -->
+    <div id="project-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="close-modal-button">&times;</span>
+            <div id="modal-body">
+                <div class="project-info-content">
+                    <h3 id="modal-project-name">Project Details: </h3>
+                    <p><strong>Start Date:</strong> <span id="modal-project-start-date"></span></p>
+                    <p><strong>Due Date:</strong> <span id="modal-project-due-date"></span></p>
+                    <p>Status: <span id="modal-project-status" class="status-text"></span></p>
+                    <p id="modal-project-date-diff"></p>
+                </div>
+
+                <div class="subproject-add">
+                    <h4>Add New Subproject</h4>
+                    <form id="subproject-form">
+                        <input type="hidden" id="modal-parent-project-id">
+                        <div class="form-group">
+                            <label for="subprojectName">Subproject Name:</label>
+                            <input type="text" id="subprojectName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subprojectStartDate">Start Date:</label>
+                            <input type="date" id="subprojectStartDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subprojectDueDate">Due Date:</label>
+                            <input type="date" id="subprojectDueDate" required>
+                        </div>
+                        <button type="submit">Add Subproject</button>
+                    </form>
+                </div>
+
+                <div class="subprojects-list">
+                    <h4>Subprojects</h4>
+                    <div id="subprojects-container">
+                        <!-- Subproject items will be rendered here by JavaScript -->
+                        <div class="no-subprojects-message" id="no-subprojects-message">No subprojects for this project.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript logic for the PMA Schedule Application
+
+        // --- Data Model ---
+        let userProjectData = {}; // Stores all project data per user
+        let currentUser = 'Gabor'; // Default user
+
+        // --- DOM Elements ---
+        const userSelector = document.getElementById('user-selector');
+        const projectForm = document.getElementById('project-form');
+        const projectNameInput = document.getElementById('projectName');
+        const startDateInput = document.getElementById('startDate');
+        const dueDateInput = document.getElementById('dueDate');
+        const projectListDiv = document.getElementById('project-list');
+        const noProjectsMessage = document.getElementById('no-projects-message');
+        const nameFilterInput = document.getElementById('name-filter');
+        const statusFilterSelect = document.getElementById('status-filter');
+
+        // Modal Elements
+        const projectDetailsModal = document.getElementById('project-details-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const modalProjectName = document.getElementById('modal-project-name');
+        const modalProjectStartDate = document.getElementById('modal-project-start-date');
+        const modalProjectDueDate = document.getElementById('modal-project-due-date');
+        const modalProjectStatus = document.getElementById('modal-project-status');
+        const modalProjectDateDiff = document.getElementById('modal-project-date-diff');
+        const modalParentProjectIdInput = document.getElementById('modal-parent-project-id');
+        const subprojectForm = document.getElementById('subproject-form');
+        const subprojectNameInput = document.getElementById('subprojectName');
+        const subprojectStartDateInput = document.getElementById('subprojectStartDate');
+        const subprojectDueDateInput = document.getElementById('subprojectDueDate');
+        const subprojectsContainer = document.getElementById('subprojects-container');
+        const noSubprojectsMessage = document.getElementById('no-subprojects-message');
+
+        let editingProjectDatesId = null; // Stores the ID of the project whose dates are being edited
+        let editingSubprojectDueDateId = null; // Stores the ID of the subproject whose due date is being edited
+        let currentSelectedProjectId = null; // Stores the ID of the project currently shown in the modal
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProjectsFromLocalStorage();
+            renderProjects();
+            updateUserSelector(); // Ensure user selector reflects current user
+        });
+
+        // --- Utility Functions ---
+
+        /**
+         * Generates a unique ID for new projects/subprojects.
+         * @returns {number} A unique timestamp-based ID.
+         */
+        function generateUniqueId() {
+            return Date.now() + Math.floor(Math.random() * 1000);
+        }
+
+        /**
+         * Calculates the difference in days between a due date and today.
+         * @param {string} dueDateString - The due date in 'YYYY-MM-DD' format.
+         * @returns {string} A human-readable string indicating days left or past.
+         */
+        function getDateDifference(dueDateString) {
+            if (!dueDateString) {
+                return '';
+            }
+            const dueDate = new Date(dueDateString);
+            const today = new Date();
+
+            // Reset time components to compare only dates
+            dueDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+
+            const diffTime = dueDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return 'Due today!';
+            } else if (diffDays > 0) {
+                return `${diffDays} days left until deadline.`;
+            } else {
+                return `${Math.abs(diffDays)} days past deadline.`;
+            }
+        }
+
+        /**
+         * Capitalizes the first letter of a string.
+         * @param {string} str - The input string.
+         * @returns {string} The string with the first letter capitalized.
+         */
+        function titleCase(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // --- Local Storage Management ---
+
+        /**
+         * Loads project data from localStorage.
+         */
+        function loadProjectsFromLocalStorage() {
+            const storedData = localStorage.getItem('pmaProjects');
+            if (storedData) {
+                userProjectData = JSON.parse(storedData);
+            } else {
+                // Initialize with some demo data if nothing is in local storage
+                userProjectData = {
+                    'Gabor': [
+                        {
+                            id: generateUniqueId(),
+                            name: 'Angular App Development',
+                            startDate: '2025-06-01',
+                            dueDate: '2025-12-31',
+                            status: 'inProgress',
+                            subprojects: [
+                                { id: generateUniqueId(), name: 'Frontend Design', startDate: '2025-06-05', dueDate: '2025-07-20', status: 'completed', parentProjectId: 0 },
+                                { id: generateUniqueId(), name: 'Backend API Integration', startDate: '2025-07-21', dueDate: '2025-09-30', status: 'inProgress', parentProjectId: 0 },
+                                { id: generateUniqueId(), name: 'Testing and Deployment', startDate: '2025-10-01', dueDate: '2025-12-20', status: 'planned', parentProjectId: 0 }
+                            ]
+                        },
+                        {
+                            id: generateUniqueId(),
+                            name: 'Mobile App Project',
+                            startDate: '2025-08-15',
+                            dueDate: '2026-03-30',
+                            status: 'planned',
+                            subprojects: []
+                        }
+                    ],
+                    'Attila': [
+                        {
+                            id: generateUniqueId(),
+                            name: 'E-commerce Website',
+                            startDate: '2025-05-10',
+                            dueDate: '2025-11-15',
+                            status: 'completed',
+                            subprojects: [
+                                { id: generateUniqueId(), name: 'UI/UX Mockups', startDate: '2025-05-12', dueDate: '2025-06-01', status: 'completed', parentProjectId: 0 },
+                                { id: generateUniqueId(), name: 'Database Setup', startDate: '2025-06-05', dueDate: '2025-07-15', status: 'completed', parentProjectId: 0 }
+                            ]
+                        }
+                    ],
+                    'David': []
+                };
+            }
+            // Ensure demo data has correct parentProjectId after loading/initializing
+            Object.values(userProjectData).forEach(projects => {
+                projects.forEach(project => {
+                    project.subprojects.forEach(subproject => {
+                        subproject.parentProjectId = project.id;
+                    });
+                });
+            });
+            // Set initial current user from selector or default
+            currentUser = userSelector.value;
+        }
+
+        /**
+         * Saves all project data to localStorage.
+         */
+        function saveProjectsToLocalStorage() {
+            localStorage.setItem('pmaProjects', JSON.stringify(userProjectData));
+        }
+
+        // --- User Management ---
+
+        /**
+         * Updates the user selector options based on available users in data.
+         */
+        function updateUserSelector() {
+            userSelector.innerHTML = ''; // Clear existing options
+            const users = Object.keys(userProjectData);
+            users.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user;
+                option.textContent = user;
+                userSelector.appendChild(option);
+            });
+            // Set the current user in the selector
+            userSelector.value = currentUser;
+        }
+
+        /**
+         * Handles user change from the dropdown.
+         */
+        userSelector.addEventListener('change', () => {
+            currentUser = userSelector.value;
+            renderProjects(); // Re-render projects for the new user
+        });
+
+        // --- Project Management ---
+
+        /**
+         * Adds a new project.
+         * @param {Event} event - The form submission event.
+         */
+        projectForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            const newProject = {
+                id: generateUniqueId(),
+                name: projectNameInput.value,
+                startDate: startDateInput.value,
+                dueDate: dueDateInput.value,
+                status: 'planned',
+                subprojects: []
+            };
+
+            if (!userProjectData[currentUser]) {
+                userProjectData[currentUser] = [];
+            }
+            userProjectData[currentUser].push(newProject);
+            saveProjectsToLocalStorage();
+            renderProjects(); // Re-render the list
+
+            // Clear form fields
+            projectForm.reset();
+        });
+
+        /**
+         * Renders the list of projects for the current user, applying filters.
+         */
+        function renderProjects() {
+            const projects = userProjectData[currentUser] || [];
+            const nameFilter = nameFilterInput.value.toLowerCase();
+            const statusFilter = statusFilterSelect.value;
+
+            const filteredProjects = projects.filter(project => {
+                const nameMatch = project.name.toLowerCase().includes(nameFilter);
+                const statusMatch = statusFilter === 'all' || project.status === statusFilter;
+                return nameMatch && statusMatch;
+            });
+
+            projectListDiv.innerHTML = ''; // Clear existing list
+            if (filteredProjects.length === 0) {
+                noProjectsMessage.style.display = 'block';
+                projectListDiv.appendChild(noProjectsMessage);
+            } else {
+                noProjectsMessage.style.display = 'none';
+                filteredProjects.forEach(project => {
+                    const projectItem = document.createElement('div');
+                    projectItem.className = `project-item status-${project.status}`;
+                    projectItem.innerHTML = `
+                        <div class="project-info">
+                            <strong>${project.name}</strong>
+                            <p>
+                                <span>Duration:</span>
+                                <span id="project-dates-${project.id}">${project.startDate} - ${project.dueDate}</span>
+                                <input type="date" id="edit-start-date-${project.id}" value="${project.startDate}" style="display:none;">
+                                <input type="date" id="edit-due-date-${project.id}" value="${project.dueDate}" style="display:none;">
+                                <button class="edit-dates-button" data-project-id="${project.id}">Edit</button>
+                                <button class="save-dates-button" data-project-id="${project.id}" style="display:none;">Save</button>
+                                <button class="cancel-dates-button" data-project-id="${project.id}" style="display:none;">Cancel</button>
+                            </p>
+                            <p><span>Status:</span> <span class="status-text status-${project.status}">${titleCase(project.status)}</span></p>
+                            <p>${getDateDifference(project.dueDate)}</p>
+                        </div>
+                        <div class="project-controls">
+                            <select data-project-id="${project.id}">
+                                <option value="planned" ${project.status === 'planned' ? 'selected' : ''}>Planned</option>
+                                <option value="inProgress" ${project.status === 'inProgress' ? 'selected' : ''}>In Progress</option>
+                                <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                            <button class="delete-button" data-project-id="${project.id}">Delete</button>
+                        </div>
+                    `;
+                    projectListDiv.appendChild(projectItem);
+
+                    // Add event listeners for status change
+                    projectItem.querySelector('select').addEventListener('change', (e) => {
+                        updateProjectStatus(project.id, e.target.value);
+                    });
+
+                    // Add event listeners for delete button
+                    projectItem.querySelector('.delete-button').addEventListener('click', () => {
+                        deleteProject(project.id);
+                    });
+
+                    // Add event listeners for date editing
+                    const editButton = projectItem.querySelector('.edit-dates-button');
+                    const saveButton = projectItem.querySelector('.save-dates-button');
+                    const cancelButton = projectItem.querySelector('.cancel-dates-button');
+                    const datesSpan = projectItem.querySelector(`#project-dates-${project.id}`);
+                    const editStartDateInput = projectItem.querySelector(`#edit-start-date-${project.id}`);
+                    const editDueDateInput = projectItem.querySelector(`#edit-due-date-${project.id}`);
+
+                    editButton.addEventListener('click', () => {
+                        editingProjectDatesId = project.id;
+                        datesSpan.style.display = 'none';
+                        editStartDateInput.style.display = 'inline-block';
+                        editDueDateInput.style.display = 'inline-block';
+                        editButton.style.display = 'none';
+                        saveButton.style.display = 'inline-block';
+                        cancelButton.style.display = 'inline-block';
+                    });
+
+                    saveButton.addEventListener('click', () => {
+                        updateProjectDates(project.id, editStartDateInput.value, editDueDateInput.value);
+                        editingProjectDatesId = null;
+                    });
+
+                    cancelButton.addEventListener('click', () => {
+                        editingProjectDatesId = null;
+                        datesSpan.style.display = 'inline-block';
+                        editStartDateInput.style.display = 'none';
+                        editDueDateInput.style.display = 'none';
+                        editButton.style.display = 'inline-block';
+                        saveButton.style.display = 'none';
+                        cancelButton.style.display = 'none';
+                        renderProjects(); // Re-render to revert values
+                    });
+
+                    // Add event listener to show modal
+                    projectItem.querySelector('.project-info').addEventListener('click', () => {
+                        showProjectDetails(project.id);
+                    });
+                });
+            }
+        }
+
+        /**
+         * Updates the status of a project.
+         * @param {number} projectId - The ID of the project to update.
+         * @param {string} newStatus - The new status ('planned', 'inProgress', 'completed').
+         */
+        function updateProjectStatus(projectId, newStatus) {
+            const projects = userProjectData[currentUser];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.status = newStatus;
+                saveProjectsToLocalStorage();
+                renderProjects();
+            }
+        }
+
+        /**
+         * Updates the start and due dates of a project.
+         * @param {number} projectId - The ID of the project to update.
+         * @param {string} newStartDate - The new start date.
+         * @param {string} newDueDate - The new due date.
+         */
+        function updateProjectDates(projectId, newStartDate, newDueDate) {
+            const projects = userProjectData[currentUser];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.startDate = newStartDate;
+                project.dueDate = newDueDate;
+                saveProjectsToLocalStorage();
+                renderProjects();
+            }
+        }
+
+        /**
+         * Deletes a project.
+         * @param {number} projectId - The ID of the project to delete.
+         */
+        function deleteProject(projectId) {
+            if (confirm('Are you sure you want to delete this project and all its subprojects?')) { // Use a custom modal in a real app
+                userProjectData[currentUser] = userProjectData[currentUser].filter(p => p.id !== projectId);
+                saveProjectsToLocalStorage();
+                renderProjects();
+            }
+        }
+
+        // --- Filtering ---
+        nameFilterInput.addEventListener('input', renderProjects);
+        statusFilterSelect.addEventListener('change', renderProjects);
+
+        // --- Modal Functions ---
+
+        /**
+         * Displays the project details modal.
+         * @param {number} projectId - The ID of the project to display.
+         */
+        function showProjectDetails(projectId) {
+            currentSelectedProjectId = projectId;
+            const project = userProjectData[currentUser].find(p => p.id === projectId);
+
+            if (project) {
+                modalProjectName.textContent = `Project Details: ${project.name}`;
+                modalProjectStartDate.textContent = project.startDate;
+                modalProjectDueDate.textContent = project.dueDate;
+                modalProjectStatus.textContent = titleCase(project.status);
+                modalProjectStatus.className = `status-text status-${project.status}`; // Update class for styling
+                modalProjectDateDiff.textContent = getDateDifference(project.dueDate);
+                modalParentProjectIdInput.value = project.id; // Set hidden input for subproject form
+
+                renderSubprojects(project.id); // Render subprojects for this project
+                projectDetailsModal.classList.add('show'); // Show the modal
+            }
+        }
+
+        /**
+         * Closes the project details modal.
+         */
+        closeModalButton.addEventListener('click', () => {
+            projectDetailsModal.classList.remove('show');
+            currentSelectedProjectId = null; // Clear selected project
+            editingSubprojectDueDateId = null; // Reset subproject editing state
+        });
+
+        // Close modal if clicked outside content
+        projectDetailsModal.addEventListener('click', (e) => {
+            if (e.target === projectDetailsModal) {
+                projectDetailsModal.classList.remove('show');
+                currentSelectedProjectId = null;
+                editingSubprojectDueDateId = null;
+            }
+        });
+
+        // --- Subproject Management ---
+
+        /**
+         * Adds a new subproject to the currently selected project.
+         * @param {Event} event - The form submission event.
+         */
+        subprojectForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const parentProjectId = parseInt(modalParentProjectIdInput.value);
+            const project = userProjectData[currentUser].find(p => p.id === parentProjectId);
+
+            if (project) {
+                const newSubproject = {
+                    id: generateUniqueId(),
+                    name: subprojectNameInput.value,
+                    startDate: subprojectStartDateInput.value,
+                    dueDate: subprojectDueDateInput.value,
+                    status: 'planned',
+                    parentProjectId: parentProjectId
+                };
+
+                project.subprojects.push(newSubproject);
+                saveProjectsToLocalStorage();
+                renderSubprojects(parentProjectId); // Re-render subprojects
+                renderProjects(); // Re-render main projects to update status if needed
+
+                // Clear form fields
+                subprojectForm.reset();
+            }
+        });
+
+        /**
+         * Renders the list of subprojects for a given parent project.
+         * @param {number} parentProjectId - The ID of the parent project.
+         */
+        function renderSubprojects(parentProjectId) {
+            const project = userProjectData[currentUser].find(p => p.id === parentProjectId);
+            subprojectsContainer.innerHTML = ''; // Clear existing list
+
+            if (project && project.subprojects.length > 0) {
+                noSubprojectsMessage.style.display = 'none';
+                project.subprojects.forEach(subProject => {
+                    const subprojectItem = document.createElement('div');
+                    subprojectItem.className = `subproject-item status-${subProject.status}`;
+                    subprojectItem.innerHTML = `
+                        <div class="subproject-info">
+                            <strong>${subProject.name}</strong>
+                            <p>
+                                Start: ${subProject.startDate}
+                                <span id="subproject-dates-${subProject.id}">Due Date: ${subProject.dueDate}</span>
+                                <input type="date" id="edit-subproject-due-date-${subProject.id}" value="${subProject.dueDate}" style="display:none;">
+                                <button class="edit-subproject-date-button" data-subproject-id="${subProject.id}">Edit</button>
+                                <button class="save-subproject-date-button" data-subproject-id="${subProject.id}" style="display:none;">Save</button>
+                                <button class="cancel-subproject-date-button" data-subproject-id="${subProject.id}" style="display:none;">Cancel</button>
+                            </p>
+                            <p>Status: <span class="status-text status-${subProject.status}">${titleCase(subProject.status)}</span></p>
+                        </div>
+                        <div class="subproject-controls">
+                            <select data-subproject-id="${subProject.id}">
+                                <option value="planned" ${subProject.status === 'planned' ? 'selected' : ''}>Planned</option>
+                                <option value="inProgress" ${subProject.status === 'inProgress' ? 'selected' : ''}>In Progress</option>
+                                <option value="completed" ${subProject.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                            <button class="delete-button" data-subproject-id="${subProject.id}">Delete</button>
+                        </div>
+                    `;
+                    subprojectsContainer.appendChild(subprojectItem);
+
+                    // Add event listeners for subproject status change
+                    subprojectItem.querySelector('select').addEventListener('change', (e) => {
+                        updateSubprojectStatus(parentProjectId, subProject.id, e.target.value);
+                    });
+
+                    // Add event listeners for subproject delete button
+                    subprojectItem.querySelector('.delete-button').addEventListener('click', () => {
+                        deleteSubproject(parentProjectId, subProject.id);
+                    });
+
+                    // Add event listeners for subproject date editing
+                    const editButton = subprojectItem.querySelector('.edit-subproject-date-button');
+                    const saveButton = subprojectItem.querySelector('.save-subproject-date-button');
+                    const cancelButton = subprojectItem.querySelector('.cancel-subproject-date-button');
+                    const datesSpan = subprojectItem.querySelector(`#subproject-dates-${subProject.id}`);
+                    const editDueDateInput = subprojectItem.querySelector(`#edit-subproject-due-date-${subProject.id}`);
+
+                    editButton.addEventListener('click', () => {
+                        editingSubprojectDueDateId = subProject.id;
+                        datesSpan.style.display = 'none';
+                        editDueDateInput.style.display = 'inline-block';
+                        editButton.style.display = 'none';
+                        saveButton.style.display = 'inline-block';
+                        cancelButton.style.display = 'inline-block';
+                    });
+
+                    saveButton.addEventListener('click', () => {
+                        updateSubprojectDueDate(parentProjectId, subProject.id, editDueDateInput.value);
+                        editingSubprojectDueDateId = null;
+                    });
+
+                    cancelButton.addEventListener('click', () => {
+                        editingSubprojectDueDateId = null;
+                        datesSpan.style.display = 'inline-block';
+                        editDueDateInput.style.display = 'none';
+                        editButton.style.display = 'inline-block';
+                        saveButton.style.display = 'none';
+                        cancelButton.style.display = 'none';
+                        renderSubprojects(parentProjectId); // Re-render to revert values
+                    });
+                });
+            } else {
+                noSubprojectsMessage.style.display = 'block';
+                subprojectsContainer.appendChild(noSubprojectsMessage);
+            }
+        }
+
+        /**
+         * Updates the status of a subproject.
+         * @param {number} parentProjectId - The ID of the parent project.
+         * @param {number} subProjectId - The ID of the subproject to update.
+         * @param {string} newStatus - The new status.
+         */
+        function updateSubprojectStatus(parentProjectId, subProjectId, newStatus) {
+            const projects = userProjectData[currentUser];
+            const project = projects.find(p => p.id === parentProjectId);
+            if (project) {
+                const subProject = project.subprojects.find(sp => sp.id === subProjectId);
+                if (subProject) {
+                    subProject.status = newStatus;
+                    saveProjectsToLocalStorage();
+                    renderSubprojects(parentProjectId);
+                    renderProjects(); // Re-render main projects to update status if needed
+                }
+            }
+        }
+
+        /**
+         * Updates the due date of a subproject.
+         * @param {number} parentProjectId - The ID of the parent project.
+         * @param {number} subProjectId - The ID of the subproject to update.
+         * @param {string} newDueDate - The new due date.
+         */
+        function updateSubprojectDueDate(parentProjectId, subProjectId, newDueDate) {
+            const projects = userProjectData[currentUser];
+            const project = projects.find(p => p.id === parentProjectId);
+            if (project) {
+                const subProject = project.subprojects.find(sp => sp.id === subProjectId);
+                if (subProject) {
+                    subProject.dueDate = newDueDate;
+                    saveProjectsToLocalStorage();
+                    renderSubprojects(parentProjectId);
+                    renderProjects(); // Re-render main projects to update status if needed
+                }
+            }
+        }
+
+        /**
+         * Deletes a subproject.
+         * @param {number} parentProjectId - The ID of the parent project.
+         * @param {number} subProjectId - The ID of the subproject to delete.
+         */
+        function deleteSubproject(parentProjectId, subProjectId) {
+            if (confirm('Are you sure you want to delete this subproject?')) { // Use a custom modal in a real app
+                const projects = userProjectData[currentUser];
+                const project = projects.find(p => p.id === parentProjectId);
+                if (project) {
+                    project.subprojects = project.subprojects.filter(sp => sp.id !== subProjectId);
+                    saveProjectsToLocalStorage();
+                    renderSubprojects(parentProjectId);
+                    renderProjects(); // Re-render main projects to update status if needed
+                }
+            }
+        }
+    </script>
+</body>
+</html>
